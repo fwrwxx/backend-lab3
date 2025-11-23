@@ -1,40 +1,80 @@
 {
   "info": {
-    "name": "Expense Tracker Lab3",
-    "_postman_id": "lab3-collection",
-    "description": "Повна колекція для тестування Expense Tracker Lab3",
+    "name": "Expense Tracker Lab4",
+    "_postman_id": "expense-tracker-lab4",
+    "description": "JWT authentication flow for Lab 4",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
+  "variable": [
+    {
+      "key": "token",
+      "value": ""
+    }
+  ],
   "item": [
     {
-      "name": "Create User",
+      "name": "Register",
       "request": {
         "method": "POST",
         "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
+          { "key": "Content-Type", "value": "application/json" }
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"name\": \"Olya\"\n}"
+          "raw": "{\n  \"username\": \"olia\",\n  \"password\": \"12345\"\n}"
         },
         "url": {
-          "raw": "http://127.0.0.1:5000/api/users",
+          "raw": "http://127.0.0.1:5000/api/register",
           "protocol": "http",
           "host": ["127.0.0.1"],
           "port": "5000",
-          "path": ["api", "users"]
+          "path": ["api", "register"]
         }
       },
       "response": []
     },
     {
-      "name": "Get Users",
+      "name": "Login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Save token",
+              "let json = pm.response.json();",
+              "pm.collectionVariables.set(\"token\", json.access_token);",
+              "console.log(\"Token saved:\", json.access_token);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"olia\",\n  \"password\": \"12345\"\n}"
+        },
+        "url": {
+          "raw": "http://127.0.0.1:5000/api/login",
+          "protocol": "http",
+          "host": ["127.0.0.1"],
+          "port": "5000",
+          "path": ["api", "login"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Users (Protected)",
       "request": {
         "method": "GET",
-        "header": [],
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
         "url": {
           "raw": "http://127.0.0.1:5000/api/users",
           "protocol": "http",
@@ -46,18 +86,16 @@
       "response": []
     },
     {
-      "name": "Create Account",
+      "name": "Create Account (Protected)",
       "request": {
         "method": "POST",
         "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"user_id\": 1,\n  \"name\": \"Main Wallet\"\n}"
+          "raw": "{\n  \"name\": \"Main Wallet\",\n  \"balance\": 0\n}"
         },
         "url": {
           "raw": "http://127.0.0.1:5000/api/accounts",
@@ -70,18 +108,33 @@
       "response": []
     },
     {
-      "name": "Create Record",
+      "name": "Get Accounts (Protected)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "http://127.0.0.1:5000/api/accounts",
+          "protocol": "http",
+          "host": ["127.0.0.1"],
+          "port": "5000",
+          "path": ["api", "accounts"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Create Record (Protected)",
       "request": {
         "method": "POST",
         "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"user_id\": 1,\n  \"account_id\": 1,\n  \"amount\": 500,\n  \"type\": \"income\"\n}"
+          "raw": "{\n  \"account_id\": 1,\n  \"amount\": 500,\n  \"type\": \"income\"\n}"
         },
         "url": {
           "raw": "http://127.0.0.1:5000/api/records",
@@ -94,37 +147,18 @@
       "response": []
     },
     {
-      "name": "Get Records",
+      "name": "Get Records (Protected)",
       "request": {
         "method": "GET",
-        "header": [],
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
         "url": {
-          "raw": "http://127.0.0.1:5000/api/records?user_id=1",
+          "raw": "http://127.0.0.1:5000/api/records",
           "protocol": "http",
           "host": ["127.0.0.1"],
           "port": "5000",
-          "path": ["api", "records"],
-          "query": [
-            {
-              "key": "user_id",
-              "value": "1"
-            }
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Delete Record",
-      "request": {
-        "method": "DELETE",
-        "header": [],
-        "url": {
-          "raw": "http://127.0.0.1:5000/api/records/1",
-          "protocol": "http",
-          "host": ["127.0.0.1"],
-          "port": "5000",
-          "path": ["api", "records", "1"]
+          "path": ["api", "records"]
         }
       },
       "response": []

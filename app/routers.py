@@ -2,42 +2,85 @@ from flask import Blueprint, request, jsonify
 from .models import User, Account, Record
 from .extensions import db
 from .schemas import user_schema, users_schema, account_schema, accounts_schema, record_schema, records_schema
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from passlib.hash import pbkdf2_sha256
 
 api_bp = Blueprint('api', __name__)
 
-# Users
-@api_bp.post('/users')
-def create_user():
+# ------------------------
+# AUTH — Реєстрація
+# ------------------------
+@api_bp.post("/register")
+def register():
     data = request.json
-    user = User(name=data['name'])
+
+    if User.query.filter_by(username=data["username"]).first():
+        return {"error": "Username already exists"}, 400
+
+    user = User(
+        username=data["username"],
+        password=pbkdf2_sha256.hash(data["password"])
+    )
+
     db.session.add(user)
     db.session.commit()
-    return user_schema.jsonify(user)
 
+    return {"message": "User created successfully"}, 201
+
+
+# ------------------------
+# AUTH — Логін
+# ------------------------
+@api_bp.post("/login")
+def login():
+    data = request.json
+    user = User.query.filter_by(username=data["username"]).first()
+
+    if user and pbkdf2_sha256.verify(data["password"], user.password):
+        token = create_access_token(identity=user.id)
+        return {"access_token": token}, 200
+
+    return {"error": "Invalid credentials"}, 401
+
+
+# ------------------------
+# USERS (Захищені)
+# ------------------------
 @api_bp.get('/users')
+@jwt_required()
 def get_users():
     return users_schema.jsonify(User.query.all())
 
-# Accounts
+# ------------------------
+# ACCOUNTS (Захищені)
+# ------------------------
 @api_bp.post('/accounts')
+@jwt_required()
 def create_account():
     data = request.json
-    acc = Account(user_id=data['user_id'], name=data['name'], balance=data.get('balance', 0))
+    user_id = get_jwt_identity()
+
+    acc = Account(user_id=user_id, name=data['name'], balance=data.get('balance', 0))
     db.session.add(acc)
     db.session.commit()
     return account_schema.jsonify(acc)
 
 @api_bp.get('/accounts')
+@jwt_required()
 def get_accounts():
-    return accounts_schema.jsonify(Account.query.all())
+    user_id = get_jwt_identity()
+    return accounts_schema.jsonify(Account.query.filter_by(user_id=user_id).all())
 
-# Records
+# ------------------------
+# RECORDS (Захищені)
+# ------------------------
 @api_bp.post('/records')
+@jwt_required()
 def create_record():
     data = request.json
     acc = Account.query.get(data['account_id'])
 
-    if not acc:
+    if not acc or acc.user_id != get_jwt_identity():
         return {"error": "account not found"}, 404
 
     amount = float(data['amount'])
@@ -58,5 +101,9 @@ def create_record():
     return record_schema.jsonify(rec)
 
 @api_bp.get('/records')
+@jwt_required()
 def get_records():
-    return records_schema.jsonify(Record.query.all())
+    user_id = get_jwt_identity()
+    user_accounts = Account.query.filter_by(user_id=user_id).all()
+    ids = [a.id for a in user_accounts]
+    return records_schema.jsonify(Record.query.filter(Record.account_id.in_(ids)).all())

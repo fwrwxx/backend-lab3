@@ -6,3 +6,5 @@ class Config:
         "postgresql://postgres:password123@localhost:5432/expense_tracker"
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "super-secret-dev-key")

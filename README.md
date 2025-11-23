@@ -3,7 +3,6 @@
 
 ## Setup (Windows + PostgreSQL 15)
 
-
 1. Встановити PostgreSQL
 2. Створити БД: expense_tracker
 3. У config.py прописати пароль
